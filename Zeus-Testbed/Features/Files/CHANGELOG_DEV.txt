@@ -1,0 +1,218 @@
+## Phase 1: Foundational Navigation & Manipulation
+
+### Milestone 1.1: Hierarchical Navigation (YYYY-MM-DD)
+
+#### Added
+- **State Management (`FileBrowserViewModel`):**
+    - Introduced `@Published private(set) var navigationPath: [FileItem]` to track the current folder navigation stack for breadcrumbs.
+    - Introduced `@Published private var currentFolderID: UUID?` to hold the ID of the current folder being viewed (`nil` represents the root).
+- **Navigation Logic (`FileBrowserViewModel`):**
+    - Added `navigate(to: FileItem)` to move into a child folder.
+    - Added `navigate(toDirectoryAt: Int)` and `navigateToRoot()` to handle backward navigation from breadcrumbs.
+- **UI Components (`FilesMainView`):**
+    - Created new `HeaderView` to encapsulate all header content.
+    - Created new `BreadcrumbView` to display the `navigationPath` and handle navigation clicks.
+- **UI Interaction (`FileBrowserView`):**
+    - Added `.onTapGesture(count: 2)` to `FileCardView` to trigger `viewModel.navigate(to:)` for folder items.
+
+#### Changed
+- **Data Fetching (`FileBrowserViewModel.loadFiles()`):**
+    - Refactored to filter the fetched `FileItem` array based on the `currentFolderID`, showing only direct children.
+    - Added sorting to always display folders before files, then sort alphabetically.
+- **New Folder Creation (`FileBrowserViewModel.createNewFolder()`):**
+    - Updated to assign the `currentFolderID` as the `parentID` for newly created folders, ensuring they appear in the correct directory.
+- **Header (`FilesMainView`):**
+    - Replaced the static header with the new dynamic `HeaderView`.
+
+#### Known Issues & Stubs
+- The breadcrumb UI in `HeaderView` could be improved if the path becomes very long; it does not currently truncate or scroll.
+- The "Add Files" button in the empty state is still a stub and does not trigger the file importer.
+
+### Milestone 1.2: Context Menus & Core Actions (YYYY-MM-DD)
+
+#### Added
+- **Storage (`InAppFileStorageManager`):**
+    - Implemented `renameFile(withID:newName:)` to handle physical file rename and metadata update.
+    - Implemented `duplicateFile(withID:)` to handle physical file copy and new metadata creation.
+- **State Management (`FileBrowserViewModel`):**
+    - Added `@Published var fileToRename: FileItem?` and `@Published var isRenaming: Bool` to manage the state of the inline renaming UI.
+- **Action Logic (`FileBrowserViewModel`):**
+    - Added `startRenaming(file:)` and `commitRename(newName:)` to orchestrate the rename flow.
+    - Added `duplicateFile(withID:)` and `toggleFavorite(for:)` to handle user actions.
+- **UI (`FileCardView`):**
+    - Added a conditional view that swaps the file name `Text` for a `TextField` when `isRenaming` is true for that item.
+    - Used `@FocusState` to automatically focus the `TextField` when renaming begins.
+
+#### Changed
+- **Context Menu (`FileCardView`):**
+    - Expanded the context menu to include "Rename", "Duplicate", and "Toggle Favorite" actions, mapping them to the new ViewModel methods.
+- **Overlay (`FileCardView`):**
+    - Updated the border logic to show a more prominent accent color when the item is actively being renamed.
+
+#### Known Issues & Stubs
+- Renaming a file to an empty string is not prevented and will cause issues. Input validation should be added.
+- Toggling a favorite status does not yet visually filter the file list when the "Favorites" smart group is selected.
+
+## Milestone 3.1 - Drag-and-Drop Implementation (2024-06-20)
+
+### Added
+- **External Drag-and-Drop Import**: Implemented `onDrop` modifiers to accept files from Finder/desktop into the app window
+- **Visual Drop Feedback**: Added animated drop zone overlay with dashed border and clear messaging during external file drops
+- **Internal Drag-and-Drop**: Enabled moving files between folders within the app using coordinated drag state management
+- **Enhanced FileCardView**: Added visual feedback for drag operations including drag targeting states and folder drop indicators
+- **Drag State Coordination**: Implemented centralized drag state management in FileBrowserViewModel for coordinated visual feedback
+
+### Enhanced
+- **FileBrowserViewModel**: Added `draggedFileID` and `dropTargetFileID` properties for drag state coordination
+- **FileCardView**: Enhanced with drag targeting overlays, visual states for being dragged vs targeting, and folder-specific drop indicators
+- **Error Handling**: Robust validation preventing folder circular references and invalid drop operations
+
+### Technical Details
+- Used `UTType.fileURL` for external drops and `UTType.text` for internal file movement
+- Implemented recursive `isDescendant` helper to prevent circular folder structures
+- Added proper state cleanup on drag completion and error conditions
+- Updated deprecated `onChange` usage to macOS 14+ compatible syntax
+
+### Files Modified
+- `FileBrowserView.swift`: Added external and internal drag-and-drop handlers with visual feedback
+- `FileBrowserViewModel.swift`: Added drag state management and file movement logic
+- `FileCardView.swift`: Enhanced with drag visual states and targeting overlays
+
+---
+
+## Milestone 2.2 - Global Search Enhancement (2024-06-20)
+
+### Added
+- **Global Search**: Extended search functionality to query all files in the system, not just current folder contents
+- **Search Context UI**: Dynamic header switching between breadcrumb navigation and "Search Results" context
+- **Clear Search Button**: Added one-click search clearing functionality in the search results header
+
+### Enhanced
+- **FileBrowserViewModel**: Added `allFiles` property to store complete file list for global search operations
+- **HeaderView**: Conditional display of breadcrumb vs search results context based on search state
+- **Search UX**: Improved user experience with clear visual feedback about search context
+
+### Technical Details
+- Refactored `loadFiles()` to populate both `allFiles` and `allFilesForCurrentFolder` arrays
+- Modified `filterFiles()` to use appropriate data source based on search query presence
+- Added search state management with automatic context switching
+
+### Files Modified
+- `FileBrowserViewModel.swift`: Added global search logic and data management
+- `FilesMainView.swift`: Enhanced HeaderView with conditional search context display
+
+---
+
+## Milestone 2.1 - Filename Search (2024-06-20)
+
+### Added
+- **Real-time Search**: Implemented debounced search functionality with 300ms delay
+- **Search Bar UI**: Added search input field with clear button and proper theming
+- **No Results State**: Enhanced empty state to show different messaging for search vs no files
+- **Reactive Filtering**: Used Combine to reactively filter file list based on search query
+
+### Enhanced
+- **FileBrowserViewModel**: Added `searchQuery` property and reactive filtering logic
+- **FileBrowserView**: Added search bar integration and no results state handling
+- **User Experience**: Smooth search experience with proper loading states and feedback
+
+### Technical Details
+- Implemented debounced search using Combine's `debounce` and `removeDuplicates`
+- Added case-insensitive search using `localizedCaseInsensitiveContains`
+- Integrated search with existing file loading and filtering pipeline
+
+### Files Modified
+- `FileBrowserViewModel.swift`: Added search query management and reactive filtering
+- `FilesMainView.swift`: Added SearchBar component and integration
+- `FileBrowserView.swift`: Enhanced empty state handling for search results
+
+---
+
+## Milestone 1.2 - Core File Manipulation (2024-06-20)
+
+### Added
+- **File Renaming**: Implemented inline renaming with keyboard shortcuts (Enter to save, Escape to cancel)
+- **File Duplication**: Added duplicate functionality with automatic naming ("filename copy")
+- **Favorite Toggle**: Added ability to mark/unmark files as favorites with visual star indicator
+- **Enhanced Context Menu**: Expanded context menu with rename, duplicate, and favorite options
+
+### Enhanced
+- **FileCardView**: Added inline text editing for renaming with proper focus management
+- **FileBrowserViewModel**: Added rename, duplicate, and favorite management methods
+- **Storage Layer**: Enhanced InAppFileStorageManager with rename and duplicate operations
+- **Visual Feedback**: Added star icons for favorite files and improved selection states
+
+### Technical Details
+- Implemented proper file ID handling for duplicate operations
+- Added validation to prevent duplicate names and handle edge cases
+- Enhanced notification system integration for all file operations
+- Updated FileItem model to support favorite status
+
+### Files Modified
+- `FileCardView.swift`: Added inline renaming and favorite display
+- `FileBrowserViewModel.swift`: Added file manipulation methods
+- `InAppFileStorageManager.swift`: Enhanced with rename and duplicate operations
+- `FileItem.swift`: Added favorite property support
+
+---
+
+## Milestone 1.1 - Hierarchical Navigation (2024-06-20)
+
+### Added
+- **Breadcrumb Navigation**: Implemented hierarchical folder navigation with clickable breadcrumbs
+- **Folder Navigation**: Added ability to navigate into folders and back to parent directories
+- **Navigation State Management**: Added navigation path tracking and current folder state
+- **Root Navigation**: Added "All Files" button to return to root directory
+
+### Enhanced
+- **FileBrowserViewModel**: Added navigation path management and folder filtering logic
+- **FilesMainView**: Added BreadcrumbView component with proper theming
+- **File Filtering**: Modified file loading to show only children of current folder
+- **Visual Hierarchy**: Clear visual distinction between current and parent folders in breadcrumbs
+
+### Technical Details
+- Implemented `navigationPath` array to track folder hierarchy
+- Added `currentFolderID` property for filtering files by parent
+- Enhanced file sorting to prioritize folders over files
+- Added proper state management for navigation operations
+
+### Files Modified
+- `FileBrowserViewModel.swift`: Added navigation state management and folder filtering
+- `FilesMainView.swift`: Added BreadcrumbView component and navigation integration
+
+---
+
+## Initial Implementation (2024-06-20)
+
+### Core Architecture
+- **MVVM Pattern**: Implemented Model-View-ViewModel architecture with proper separation of concerns
+- **File Storage**: Created InAppFileStorageManager for local file persistence using Application Support directory
+- **Data Models**: Implemented FileItem and Tag models with proper Codable conformance
+- **Theme System**: Created centralized FilesTheme with design tokens for consistent styling
+
+### UI Components
+- **Main Interface**: Three-panel layout with sidebar, file browser, and details panel
+- **File Cards**: Grid and list view modes with proper selection states and hover effects
+- **Sidebar**: Navigation sidebar with sections for different file categories
+- **Details Panel**: File metadata display with proper theming and layout
+
+### Features
+- **File Import**: Drag-and-drop and menu-based file import functionality
+- **File Organization**: Basic file listing with sorting and categorization
+- **Visual Design**: Premium UI matching Linear/Raycast aesthetic with proper spacing and typography
+- **Dark/Light Mode**: Full theme support with proper color adaptation
+
+### Technical Foundation
+- **SwiftUI**: Modern declarative UI framework with proper state management
+- **Combine**: Reactive programming for data binding and state updates
+- **File Management**: Proper sandbox handling and security-scoped resource access
+- **Error Handling**: Comprehensive error handling with user-friendly notifications
+
+### Files Created
+- Core models: `FileItem.swift`, `Tag.swift`, `FileVersion.swift`
+- Storage: `FileStorageProvider.swift`, `InAppFileStorageManager.swift`
+- ViewModels: `FileBrowserViewModel.swift`, `SidebarViewModel.swift`, `DetailsViewModel.swift`
+- Views: `FilesMainView.swift`, `FileBrowserView.swift`, `FileCardView.swift`, `SidebarView.swift`, `DetailsView.swift`
+- Services: `NotificationService.swift`
+- Theme: `FilesTheme.swift`
+- Sample Data: `SampleData.swift` 

@@ -1,0 +1,30 @@
+Milestone: File Previews (Phase 1 - Scaffolding)
+Date: 2024-07-29
+
+- Chore: Created the foundational structure for the File Preview feature.
+- Feat: Added `FilePreviewView.swift` as the main container view.
+- Feat: Added `FilePreviewViewModel.swift` to manage preview logic.
+- Feat: Stubbed out placeholder views for different file types:
+    - `TextPreviewView.swift`
+    - `ImagePreviewView.swift`
+    - `PDFPreviewView.swift`
+    - `UnsupportedPreviewView.swift`
+- Docs: All new files include standard documentation headers.
+
+Open Todos:
+- Awaiting stakeholder feedback on clarifying questions to finalize implementation details.
+- Integrate the `FilePreviewView` into the main application layout.
+- Implement the file loading and preview selection logic in `FilePreviewViewModel`.
+
+Milestone: UI Bug Fixes & Polish
+Date: 2024-07-29
+
+- Fix: Refactored search bar focus management to meet modern app standards. Centralized `@FocusState` and implemented tap gestures on all main views (`SidebarView`, `FileBrowserView`, `DetailsView`) to ensure focus is correctly resigned when clicking outside the search field.
+- Fix: Repaired the filter menu layout by replacing a rigid `HStack` with a custom `FlexibleView`, preventing UI text from garbling on overflow.
+- Chore: Resolved "Publishing changes from within view updates" runtime warnings by deferring state changes to the next run loop using `DispatchQueue.main.async`.
+- Chore: Updated a deprecated `String(contentsOf:)` initializer to the modern, recommended version.
+- Chore: Corrected all SwiftUI preview providers to handle the new `isSearchFocused` binding, resolving all associated compiler errors.
+- Files Touched: `FilesMainView.swift`, `SidebarView.swift`, `FileBrowserView.swift`, `DetailsView.swift`, `FileBrowserViewModel.swift`.
+
+Open Todos:
+- Resume work on the File Previews milestone. 
