@@ -38,6 +38,7 @@ struct FilesMainView: View {
                 
                 VStack(spacing: 0) {
                     HeaderView(viewModel: browserVM, layoutMode: $layoutMode, isImporting: $isImporting, isSearchFocused: $isSearchFocused)
+                        .environmentObject(notificationService)
                     FileBrowserView(viewModel: browserVM, layout: $layoutMode, isSearchFocused: $isSearchFocused)
                 }
                 .background(theme.colors.background)
@@ -54,6 +55,12 @@ struct FilesMainView: View {
                 } else {
                     detailsVM.update(with: nil)
                 }
+            }
+            .onReceive(sidebarVM.$selectedSmartGroupID) { id in
+                browserVM.updateSmartGroup(id: id)
+            }
+            .onReceive(sidebarVM.$selectedTagID) { id in
+                browserVM.updateTag(id: id)
             }
             .fileImporter(isPresented: $isImporting, allowedContentTypes: [.content], allowsMultipleSelection: true) { result in
                 storageManager.importFiles(from: result, notificationService: notificationService)
@@ -118,8 +125,10 @@ struct HeaderView: View {
     @Binding var layoutMode: FileLayoutMode
     @Binding var isImporting: Bool
     var isSearchFocused: FocusState<Bool>.Binding
+    @EnvironmentObject var notificationService: NotificationService
     
     @State private var isShowingFilterMenu = false
+    @State private var isShowingTemplateSheet = false
     
     private let theme = FilesTheme.current
 
@@ -143,6 +152,10 @@ struct HeaderView: View {
                     
                     Menu {
                         Button("New Folder") { viewModel.isShowingNewFolderAlert = true }
+                        Button("New Empty File") {
+                            viewModel.createNewFile(named: "Untitled.txt", type: .text, template: nil, notificationService: notificationService)
+                        }
+                        Button("New File from Template") { isShowingTemplateSheet = true }
                         Button("Import Files...") { isImporting = true }
                     } label: {
                         Image(systemName: "plus")
@@ -151,6 +164,11 @@ struct HeaderView: View {
                     }
                     .menuStyle(.borderlessButton)
                     .frame(width: 32, height: 28)
+
+                    .sheet(isPresented: $isShowingTemplateSheet) {
+                        NewFileTemplateView(viewModel: viewModel)
+                            .environmentObject(notificationService)
+                    }
                     
                     FileLayoutToggle(selected: $layoutMode)
                 }

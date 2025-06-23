@@ -49,7 +49,7 @@ struct FileCardView: View {
                     .font(.system(size: 16))
                     .onTapGesture {
                         isSearchFocused.wrappedValue = false
-                        viewModel.selectFile(fileID: file.id, isWithCommandKey: true)
+                        viewModel.selectFile(fileID: file.id, isWithCommandKey: true, notificationService: notificationService)
                     }
             }
             
@@ -96,7 +96,7 @@ struct FileCardView: View {
             if viewModel.isMultiSelectMode {
                 Button("Select") {
                     isSearchFocused.wrappedValue = false
-                    viewModel.selectFile(fileID: file.id, isWithCommandKey: true)
+                    viewModel.selectFile(fileID: file.id, isWithCommandKey: true, notificationService: notificationService)
                 }
                 Divider()
             }
@@ -104,6 +104,9 @@ struct FileCardView: View {
             Button("Duplicate") { viewModel.duplicateFile(withID: file.id, notificationService: notificationService) }
             Button(file.isFavorite ? "Remove from Favorites" : "Add to Favorites") {
                 viewModel.toggleFavorite(for: file, notificationService: notificationService)
+            }
+            Button(file.isProtected ? "Remove Protection" : "Protect") {
+                viewModel.toggleProtection(for: file, notificationService: notificationService)
             }
             Divider()
             Button("Delete", role: .destructive) {
