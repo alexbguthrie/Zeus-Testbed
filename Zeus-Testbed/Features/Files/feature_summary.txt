@@ -32,9 +32,14 @@ B. Core Components & Functionality
     - Favorites: Files can be marked as favorites for quick access.
     - Rich Previews: Text, image and PDF previews are available in the details pane.
 
+    - File Creation: Quick actions to generate empty files and a template picker sheet for Swift, Markdown and text files.
+    - Security: Optional Face ID/passcode protection for sensitive items.
+=======
+
     - File Creation: Quick actions to generate empty or template-based files.
     - Security: Optional Face ID/passcode protection for sensitive items.
 =======
+
 
 
 == REMAINING GAPS ==
@@ -45,6 +50,10 @@ B. Core Components & Functionality
 
 - Recents Tracking: "Recents" smart group now lists the 20 most recently modified files.
 =======
+
+- Recents Tracking: "Recents" smart group now lists the 20 most recently modified files.
+=======
 - Recents Tracking: The "Recents" smart group is still a placeholder.
+
 
 - Editing: Previews are read-only and lack editing or syntax highlighting for code files.

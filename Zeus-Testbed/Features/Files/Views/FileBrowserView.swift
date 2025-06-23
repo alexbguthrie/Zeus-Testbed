@@ -297,6 +297,10 @@ private struct FileCardContainerView: View {
             guard file.isFolder else { return false }
             return handleExternalDrop(providers, file)
         }
+        .onDrop(of: [.fileURL], isTargeted: .constant(false)) { providers in
+            guard file.isFolder else { return false }
+            return handleExternalDrop(providers: providers, targetFolder: file)
+        }
         .id(file.id)
     }
 }

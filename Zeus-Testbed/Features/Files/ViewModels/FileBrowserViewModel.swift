@@ -90,27 +90,32 @@ class FileBrowserViewModel: ObservableObject {
     func loadFiles(notificationService: NotificationService? = nil) {
         isLoading = true
         selectedFiles.removeAll() // Clear selection on reload
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { // Simulate network delay
+
+        DispatchQueue.global(qos: .userInitiated).async {
             do {
                 let fetchedFiles = try self.storage.fetchFiles()
-                self.allFiles = fetchedFiles.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-                
-                // Filter files to show only children of the current folder
-                self.allFilesForCurrentFolder = self.allFiles
-                    .filter { $0.parentID == self.currentFolderID }
-                    .sorted { $0.isFolder && !$1.isFolder || ($0.isFolder == $1.isFolder && $0.name.localizedStandardCompare($1.name) == .orderedAscending) }
-                
-                self.filterFiles(with: self.searchQuery, filters: self.activeFilters)
-                
+                let sorted = fetchedFiles.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+
+                DispatchQueue.main.async {
+                    self.allFiles = sorted
+                    // Filter files to show only children of the current folder
+                    self.allFilesForCurrentFolder = self.allFiles
+                        .filter { $0.parentID == self.currentFolderID }
+                        .sorted { $0.isFolder && !$1.isFolder || ($0.isFolder == $1.isFolder && $0.name.localizedStandardCompare($1.name) == .orderedAscending) }
+
+                    self.filterFiles(with: self.searchQuery, filters: self.activeFilters)
+                    self.isLoading = false
+                }
             } catch {
-                notificationService?.show(type: .error, message: "Failed to load files.")
-                print("Error fetching files: \(error)")
-                self.allFiles = []
-                self.allFilesForCurrentFolder = []
-                self.filteredFiles = []
+                DispatchQueue.main.async {
+                    notificationService?.show(type: .error, message: "Failed to load files.")
+                    print("Error fetching files: \(error)")
+                    self.allFiles = []
+                    self.allFilesForCurrentFolder = []
+                    self.filteredFiles = []
+                    self.isLoading = false
+                }
             }
-            self.isLoading = false
         }
     }
     
@@ -234,7 +239,11 @@ class FileBrowserViewModel: ObservableObject {
 
         do {
             try data.write(to: url)
+
+            var newFile = FileItem(name: name, type: type, url: url, size: Int64(data.count), parentID: currentFolderID)
+=======
             let newFile = FileItem(name: name, type: type, url: url, size: Int64(data.count), parentID: currentFolderID)
+
             try storage.saveFile(newFile)
             loadFiles(notificationService: notificationService)
             notificationService.show(type: .success, message: "Created \(name)")
@@ -395,15 +404,31 @@ class FileBrowserViewModel: ObservableObject {
     // MARK: - Drag-and-Drop Operations
     
     func importFile(from url: URL, parentID: UUID? = nil, notificationService: NotificationService) {
+
+        let fileManager = FileManager.default
+        var didAccess = url.startAccessingSecurityScopedResource()
+        defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
+
+        do {
+            let destinationURL = storage.filesDirectory.appendingPathComponent(url.lastPathComponent)
+            if !fileManager.fileExists(atPath: destinationURL.path) {
+                try fileManager.copyItem(at: url, to: destinationURL)
+            }
+
+            var file = FileItem(url: destinationURL)
+            file.parentID = parentID ?? currentFolderID
+
+
         do {
             // Create a FileItem from the URL
             var file = FileItem(url: url)
             file.parentID = parentID ?? currentFolderID
 
             // Save the file to storage
+
             try storage.saveFile(file)
-            loadFiles(notificationService: notificationService) // Refresh the view
-            
+            loadFiles(notificationService: notificationService)
+
             notificationService.show(type: .success, message: "Imported '\(file.name)' successfully.")
         } catch {
             notificationService.show(type: .error, message: "Failed to import file: \(error.localizedDescription)")
