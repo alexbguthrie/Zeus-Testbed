@@ -480,11 +480,45 @@ class FileBrowserViewModel: ObservableObject {
     }
     
     func undoLastBatchOperation(notificationService: NotificationService) {
-        guard let _ = lastBatchOperation else { return }
-        
-        // TODO: Implement undo logic for each operation type
-        // This would require storing more detailed state about the operation
-        notificationService.show(type: .success, message: "Undo functionality coming soon.")
+        guard let operation = lastBatchOperation else { return }
+
+        switch operation.type {
+        case .move:
+            guard let sourceID = operation.sourceFolderID else { break }
+            var restored = 0
+            var failed = 0
+            for id in operation.fileIDs {
+                do {
+                    if var file = try storage.fetchFile(withID: id) {
+                        file.parentID = sourceID
+                        file.modifiedAt = Date()
+                        try storage.saveFile(file)
+                        restored += 1
+                    } else {
+                        failed += 1
+                    }
+                } catch {
+                    failed += 1
+                }
+            }
+            loadFiles(notificationService: notificationService)
+            if failed == 0 {
+                notificationService.show(type: .success, message: "Moved \(restored) item(s) back to the original folder.")
+            } else {
+                notificationService.show(type: .error, message: "Undo completed with \(failed) failure(s).")
+            }
+        case .copy:
+            do {
+                try storage.deleteFiles(withIDs: operation.fileIDs)
+                loadFiles(notificationService: notificationService)
+                notificationService.show(type: .success, message: "Removed copied items.")
+            } catch {
+                notificationService.show(type: .error, message: "Failed to undo copy operation.")
+            }
+        case .delete:
+            notificationService.show(type: .error, message: "Undo for deletions is not supported.")
+        }
+
         lastBatchOperation = nil
     }
     

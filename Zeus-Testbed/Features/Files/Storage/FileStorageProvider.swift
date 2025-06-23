@@ -10,6 +10,7 @@ import Foundation
 protocol FileStorageProvider {
     // MARK: - File Operations
     func fetchFiles() throws -> [FileItem]
+    func fetchFile(withID id: UUID) throws -> FileItem?
     func saveFile(_ file: FileItem) throws
     func deleteFiles(withIDs ids: Set<UUID>) throws
     func renameFile(withID id: UUID, newName: String) throws
