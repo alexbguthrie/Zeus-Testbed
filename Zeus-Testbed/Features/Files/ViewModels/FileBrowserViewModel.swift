@@ -234,7 +234,7 @@ class FileBrowserViewModel: ObservableObject {
 
         do {
             try data.write(to: url)
-            var newFile = FileItem(name: name, type: type, url: url, size: Int64(data.count), parentID: currentFolderID)
+            let newFile = FileItem(name: name, type: type, url: url, size: Int64(data.count), parentID: currentFolderID)
             try storage.saveFile(newFile)
             loadFiles(notificationService: notificationService)
             notificationService.show(type: .success, message: "Created \(name)")

@@ -25,7 +25,7 @@ struct Zeus_TestbedApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            FilesMainView()
         }
         .modelContainer(sharedModelContainer)
     }

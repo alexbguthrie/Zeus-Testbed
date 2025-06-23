@@ -19,6 +19,9 @@ struct FileBrowserView: View {
     @State private var isDropTargeted = false
     @State private var draggedFile: FileItem? = nil
     
+    // File Importer
+    @State private var isImporting = false
+
     private var gridColumns: [GridItem] {
         [GridItem(.adaptive(minimum: layout == .grid ? 240 : .infinity), spacing: 12)]
     }
@@ -75,6 +78,20 @@ struct FileBrowserView: View {
             }
             return .ignored
         }
+        .fileImporter(
+            isPresented: $isImporting,
+            allowedContentTypes: [UTType.data],
+            allowsMultipleSelection: true
+        ) { result in
+            switch result {
+            case .success(let urls):
+                urls.forEach { url in
+                    viewModel.importFile(from: url, parentID: nil, notificationService: notificationService)
+                }
+            case .failure(let error):
+                notificationService.show(type: .error, message: "Failed to import files: \(error.localizedDescription)")
+            }
+        }
     }
     
     @ViewBuilder
@@ -84,7 +101,13 @@ struct FileBrowserView: View {
                 FileCardContainerView(
                     viewModel: viewModel,
                     file: file,
-                    isSearchFocused: isSearchFocused
+                    isSearchFocused: isSearchFocused,
+                    handleInternalDrop: { providers, targetFile in
+                        self.handleInternalDrop(providers: providers, targetFile: targetFile)
+                    },
+                    handleExternalDrop: { providers, targetFile in
+                        self.handleExternalDrop(providers: providers, targetFolder: targetFile)
+                    }
                 )
             }
         }
@@ -157,9 +180,7 @@ struct FileBrowserView: View {
                     .frame(maxWidth: 250)
                 
                 Button(action: {
-                    // This action should be handled by the parent view, perhaps via a closure.
-                    // For now, it just prints a message.
-                    print("Add Files button tapped.")
+                    isImporting = true
                 }) {
                     Text("Add Files")
                         .font(theme.fonts.body)
@@ -235,7 +256,12 @@ private struct FileCardContainerView: View {
     @ObservedObject var viewModel: FileBrowserViewModel
     let file: FileItem
     var isSearchFocused: FocusState<Bool>.Binding
-
+    @EnvironmentObject var notificationService: NotificationService
+    
+    // Drop handlers passed from the parent
+    var handleInternalDrop: ([NSItemProvider], FileItem) -> Bool
+    var handleExternalDrop: ([NSItemProvider], FileItem) -> Bool
+    
     var body: some View {
         FileCardView(
             viewModel: viewModel,
@@ -262,25 +288,14 @@ private struct FileCardContainerView: View {
                 viewModel.dropTargetFileID = isTargeted ? file.id : nil
             }
         )) { providers in
-            // This is a simplified handler. You might need a more robust one.
-            if let firstProvider = providers.first {
-                firstProvider.loadItem(forTypeIdentifier: UTType.text.identifier, options: nil) { (data, error) in
-                    if let data = data as? Data,
-                       let fileIDString = String(data: data, encoding: .utf8),
-                       let fileID = UUID(uuidString: fileIDString) {
-                        DispatchQueue.main.async {
-                            viewModel.moveFile(withID: fileID, toFolder: file, notificationService: NotificationService())
-                        }
-                    }
-                }
-            }
+            let result = handleInternalDrop(providers, file)
             viewModel.draggedFileID = nil
             viewModel.dropTargetFileID = nil
-            return true
+            return result
         }
         .onDrop(of: [.fileURL], isTargeted: .constant(false)) { providers in
             guard file.isFolder else { return false }
-            return handleExternalDrop(providers: providers, targetFolder: file)
+            return handleExternalDrop(providers, file)
         }
         .id(file.id)
     }

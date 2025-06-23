@@ -77,6 +77,28 @@ struct FileItem: Identifiable, Codable, Hashable {
         self.parentID = parentID
     }
 
+    // Custom decoder to handle missing `isProtected` key
+    enum CodingKeys: String, CodingKey {
+        case id, name, type, url, size, modifiedAt, isFavorite, tags, isProtected, createdAt, accessedAt, versions, parentID
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        type = try container.decode(FileType.self, forKey: .type)
+        url = try container.decodeIfPresent(URL.self, forKey: .url)
+        size = try container.decodeIfPresent(Int64.self, forKey: .size)
+        modifiedAt = try container.decode(Date.self, forKey: .modifiedAt)
+        isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
+        tags = try container.decodeIfPresent([Tag].self, forKey: .tags) ?? []
+        isProtected = try container.decodeIfPresent(Bool.self, forKey: .isProtected) ?? false
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        accessedAt = try container.decodeIfPresent(Date.self, forKey: .accessedAt)
+        versions = try container.decodeIfPresent([FileVersion].self, forKey: .versions)
+        parentID = try container.decodeIfPresent(UUID.self, forKey: .parentID)
+    }
+
     // Convenience initializer for creating a FileItem from a URL
     init(url: URL) {
         let name = url.lastPathComponent

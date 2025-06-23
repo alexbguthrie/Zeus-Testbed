@@ -7,6 +7,7 @@
 
 import SwiftUI
 import PDFKit
+import Combine
 
 /// The view model for `FilePreviewView`.
 ///
