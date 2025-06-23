@@ -239,7 +239,11 @@ class FileBrowserViewModel: ObservableObject {
 
         do {
             try data.write(to: url)
+
             var newFile = FileItem(name: name, type: type, url: url, size: Int64(data.count), parentID: currentFolderID)
+=======
+            let newFile = FileItem(name: name, type: type, url: url, size: Int64(data.count), parentID: currentFolderID)
+
             try storage.saveFile(newFile)
             loadFiles(notificationService: notificationService)
             notificationService.show(type: .success, message: "Created \(name)")
@@ -400,6 +404,7 @@ class FileBrowserViewModel: ObservableObject {
     // MARK: - Drag-and-Drop Operations
     
     func importFile(from url: URL, parentID: UUID? = nil, notificationService: NotificationService) {
+
         let fileManager = FileManager.default
         var didAccess = url.startAccessingSecurityScopedResource()
         defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
@@ -412,6 +417,14 @@ class FileBrowserViewModel: ObservableObject {
 
             var file = FileItem(url: destinationURL)
             file.parentID = parentID ?? currentFolderID
+
+
+        do {
+            // Create a FileItem from the URL
+            var file = FileItem(url: url)
+            file.parentID = parentID ?? currentFolderID
+
+            // Save the file to storage
 
             try storage.saveFile(file)
             loadFiles(notificationService: notificationService)

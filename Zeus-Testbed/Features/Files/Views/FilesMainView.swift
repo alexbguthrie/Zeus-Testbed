@@ -152,10 +152,18 @@ struct HeaderView: View {
                     
                     Menu {
                         Button("New Folder") { viewModel.isShowingNewFolderAlert = true }
+
                         Button("New Empty File") {
                             viewModel.createNewFile(named: "Untitled.txt", type: .text, template: nil, notificationService: notificationService)
                         }
                         Button("New File from Template") { isShowingTemplateSheet = true }
+
+                        Button("New Empty File") { viewModel.createNewFile(named: "Untitled.txt", type: .text, template: nil, notificationService: notificationService) }
+                        Button("New Swift File") {
+                            let template = "import Foundation\n\n"
+                            viewModel.createNewFile(named: "MyFile.swift", type: .code, template: template, notificationService: notificationService)
+                        }
+
                         Button("Import Files...") { isImporting = true }
                     } label: {
                         Image(systemName: "plus")
