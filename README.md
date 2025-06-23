@@ -20,6 +20,7 @@ The app stores imported files and metadata inside the user's Application Support
 - Search and filtering by type, tags, and date
 - Toast‑style notifications for all file actions
 - Rich file previews for text, images and PDFs
+- Template picker sheet for creating Swift, Markdown or text files
 
 - Smart sidebar groups for Recents and Favorites
 - Optional Face ID/passcode protection on files and folders

@@ -28,6 +28,10 @@ struct DetailsView: View {
         .edgesIgnoringSafeArea(.bottom)
         .contentShape(Rectangle())
         .onTapGesture { isSearchFocused.wrappedValue = false }
+        .onAppear { previewVM.update(with: viewModel.file) }
+        .onChange(of: viewModel.file?.id) { _ in
+            previewVM.update(with: viewModel.file)
+        }
     }
     
     @ViewBuilder

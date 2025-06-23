@@ -31,7 +31,7 @@ B. Core Components & Functionality
     - Search & Filtering: Debounced search with filtering by type, tags and date.
     - Favorites: Files can be marked as favorites for quick access.
     - Rich Previews: Text, image and PDF previews are available in the details pane.
-
+    - File Creation: Quick actions to generate empty files and a template picker sheet for Swift, Markdown and text files.
     - File Creation: Quick actions to generate empty or template-based files.
     - Security: Optional Face ID/passcode protection for sensitive items.
 =======
