@@ -42,6 +42,7 @@ struct FileItem: Identifiable, Codable, Hashable {
     var modifiedAt: Date
     var isFavorite: Bool
     var tags: [Tag]
+    var isProtected: Bool
     var createdAt: Date
     var accessedAt: Date?
     var versions: [FileVersion]?
@@ -55,6 +56,7 @@ struct FileItem: Identifiable, Codable, Hashable {
          size: Int64? = 0,
          modifiedAt: Date = Date(),
          isFavorite: Bool = false,
+         isProtected: Bool = false,
          tags: [Tag] = [],
          createdAt: Date = Date(),
          accessedAt: Date? = nil,
@@ -67,6 +69,7 @@ struct FileItem: Identifiable, Codable, Hashable {
         self.size = size
         self.modifiedAt = modifiedAt
         self.isFavorite = isFavorite
+        self.isProtected = isProtected
         self.tags = tags
         self.createdAt = createdAt
         self.accessedAt = accessedAt
@@ -86,7 +89,8 @@ struct FileItem: Identifiable, Codable, Hashable {
             type: type,
             url: url,
             size: size,
-            modifiedAt: modifiedAt
+            modifiedAt: modifiedAt,
+            isProtected: false
         )
     }
     

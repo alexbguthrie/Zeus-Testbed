@@ -73,6 +73,13 @@ class InAppFileStorageManager: FileStorageProvider, ObservableObject {
         }
     }
 
+    func fetchFile(withID id: UUID) throws -> FileItem? {
+        let url = metadataDirectory.appendingPathComponent("file_\(id.uuidString).json")
+        guard fileManager.fileExists(atPath: url.path) else { return nil }
+        let data = try Data(contentsOf: url)
+        return try JSONDecoder().decode(FileItem.self, from: data)
+    }
+
     func saveFile(_ file: FileItem) throws {
         let encoder = JSONEncoder()
         let data = try encoder.encode(file)

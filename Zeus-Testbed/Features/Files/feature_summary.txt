@@ -6,7 +6,7 @@ A. Architecture & Design
 - Pattern: MVVM (Model-View-ViewModel) for a clean separation of concerns.
 - State Management: Utilizes SwiftUI's ObservableObject and the Combine framework for reactive state.
 - Communication: Employs NotificationCenter (specifically .didChangeFileData) for decoupled state updates across components.
-- Theming: Driven by a protocol-based theme engine (FilesTheme) that provides a single source of truth for all UI styling (colors, fonts, layout), ensuring a consistent and maintainable look inspired by Linear/Raycast.
+- Theming: Driven by a protocol-based theme engine (FilesTheme) that provides a single source of truth for UI styling (colors, fonts, layout), ensuring a consistent and maintainable look inspired by Linear/Raycast.
 - Persistence: Uses a sandboxed file system approach within the app's Application Support directory, separating raw file assets (/files) from their Codable-serialized JSON metadata (/metadata) for fast querying.
 
 B. Core Components & Functionality
@@ -25,26 +25,19 @@ B. Core Components & Functionality
     - InAppFileStorageManager: Handles all file system interactions.
     - NotificationService: Provides non-intrusive, toast-style user notifications.
 - Key Workflows:
-    - File Import: Successfully copies files into the app's sandbox and creates associated metadata.
-    - Data Flow: A reactive data flow is established for UI updates based on user selections.
+    - File Import: Supports drag-and-drop import and creates associated metadata.
+    - Hierarchical Navigation: Breadcrumbs and folder filtering allow navigation through subfolders.
+    - File Manipulation: Inline rename, duplicate, move and delete operations with batch support.
+    - Search & Filtering: Debounced search with filtering by type, tags and date.
+    - Favorites: Files can be marked as favorites for quick access.
+    - Rich Previews: Text, image and PDF previews are available in the details pane.
+    - File Creation: Quick actions to generate empty or template-based files.
+    - Security: Optional Face ID/passcode protection for sensitive items.
 
-== MISSING FEATURES ==
+== REMAINING GAPS ==
 
-A. Core Functionality
-- Hierarchical Navigation: No ability to navigate into or out of folders; the file system is presented as a flat list.
-- Search & Filtering:
-    - No search capability for filenames or content.
-    - No dynamic sorting or advanced filtering beyond the pre-defined smart groups.
-- File & Folder Manipulation:
-    - No ability to rename files or folders.
-    - No ability to move files or folders.
-- State Persistence: UI state (window size, selections, layout mode) is not saved across app launches.
-
-B. Interactivity & User Experience
-- Drag-and-Drop: Missing for both file import and internal organization.
-- Keyboard Navigation: UI is not navigable or controllable via keyboard shortcuts.
-- Fluid Transitions: List/Grid layout changes are abrupt, lacking smooth animations.
-- Context Menus: Menus are minimal, missing standard actions like "Rename," "Duplicate," etc.
-- Undo/Redo: No undo stack for destructive actions like deletion.
-- Functional "Recents": The "Recents" smart group is a placeholder with no underlying logic to track recently opened files.
-- Rich Previews & Editing: Previews are read-only with no in-app editing or advanced rendering like syntax highlighting. 
+- Undo/Redo: Only partial undo support for batch operations; a full history stack is not yet implemented.
+- State Persistence: UI state (window size, selections, layout mode) is not saved across launches.
+- Keyboard Shortcuts: Many actions lack dedicated shortcuts for power users.
+- Recents Tracking: "Recents" smart group now lists the 20 most recently modified files.
+- Editing: Previews are read-only and lack editing or syntax highlighting for code files.
