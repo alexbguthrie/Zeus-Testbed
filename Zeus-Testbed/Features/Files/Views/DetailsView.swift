@@ -12,6 +12,7 @@ struct DetailsView: View {
     @ObservedObject var viewModel: DetailsViewModel
     @EnvironmentObject var notificationService: NotificationService
     var isSearchFocused: FocusState<Bool>.Binding
+    @StateObject private var previewVM = FilePreviewViewModel()
     private let theme = FilesTheme.current
 
     var body: some View {
@@ -33,15 +34,18 @@ struct DetailsView: View {
     private func fileDetailContent(for file: FileItem) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             header(for: file)
-            
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    previewSection(for: file)
-                    
+                    FilePreviewView(viewModel: previewVM)
+                        .padding(.horizontal, theme.layout.padding)
+                        .onAppear { previewVM.update(with: file) }
+                        .onChange(of: file.id) { _ in previewVM.update(with: file) }
+
                     Divider().padding(.horizontal, theme.layout.padding)
-                    
+
                     metadataSection(for: file)
-                    
+
                     Divider().padding(.horizontal, theme.layout.padding)
 
                     tagSection(for: file)
@@ -66,94 +70,6 @@ struct DetailsView: View {
         .overlay(Rectangle().frame(height: 1).foregroundColor(theme.colors.border), alignment: .bottom)
     }
 
-    @ViewBuilder
-    private func previewSection(for file: FileItem) -> some View {
-        VStack {
-            switch file.type {
-            case .image:
-                imagePreview(for: file)
-            case .text, .markdown, .code:
-                textPreview(for: file)
-            case .pdf:
-                pdfPreview(for: file)
-            default:
-                genericPreview(for: file)
-            }
-        }
-        .padding(.horizontal, theme.layout.padding)
-    }
-    
-    @ViewBuilder
-    private func imagePreview(for file: FileItem) -> some View {
-        if let url = file.url, let image = NSImage(contentsOf: url) {
-            Image(nsImage: image)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .cornerRadius(theme.layout.cornerRadius)
-                .overlay(
-                    RoundedRectangle(cornerRadius: theme.layout.cornerRadius)
-                        .stroke(theme.colors.border, lineWidth: theme.layout.borderWidth)
-                )
-        } else {
-            genericPreview(for: file)
-        }
-    }
-    
-    @ViewBuilder
-    private func textPreview(for file: FileItem) -> some View {
-        if let url = file.url, let content = try? String(contentsOf: url, encoding: .utf8) {
-            Text(content)
-                .font(theme.fonts.body)
-                .foregroundColor(theme.colors.textPrimary)
-                .padding()
-                .frame(maxWidth: .infinity, minHeight: 100, maxHeight: 300, alignment: .topLeading)
-                .background(theme.colors.secondaryBackground)
-                .cornerRadius(theme.layout.cornerRadius)
-                .overlay(
-                    RoundedRectangle(cornerRadius: theme.layout.cornerRadius)
-                        .stroke(theme.colors.border, lineWidth: theme.layout.borderWidth)
-                )
-        } else {
-            genericPreview(for: file)
-        }
-    }
-    
-    @ViewBuilder
-    private func pdfPreview(for file: FileItem) -> some View {
-        if let url = file.url {
-            PDFKitRepresentedView(url: url)
-                .frame(height: 300)
-                .cornerRadius(theme.layout.cornerRadius)
-                .overlay(
-                    RoundedRectangle(cornerRadius: theme.layout.cornerRadius)
-                        .stroke(theme.colors.border, lineWidth: theme.layout.borderWidth)
-                )
-        } else {
-            genericPreview(for: file)
-        }
-    }
-
-    private func genericPreview(for file: FileItem) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: "eye.slash")
-                .font(.system(size: 40, weight: .light))
-                .foregroundColor(theme.colors.textTertiary)
-            Text("No preview available")
-                .font(theme.fonts.body)
-                .foregroundColor(theme.colors.textSecondary)
-            Text("Preview for .\(file.url?.pathExtension ?? "file") files is not supported.")
-                .font(theme.fonts.caption)
-                .foregroundColor(theme.colors.textTertiary)
-        }
-        .frame(maxWidth: .infinity, minHeight: 200)
-        .background(theme.colors.secondaryBackground.opacity(0.5))
-        .background(.ultraThinMaterial)
-        .cornerRadius(theme.layout.cornerRadius)
-        .overlay(
-            RoundedRectangle(cornerRadius: theme.layout.cornerRadius)
-                .stroke(theme.colors.border, lineWidth: theme.layout.borderWidth)
-        )
-    }
     
     private func metadataSection(for file: FileItem) -> some View {
         VStack(alignment: .leading, spacing: 12) {

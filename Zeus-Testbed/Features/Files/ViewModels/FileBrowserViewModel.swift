@@ -70,7 +70,7 @@ class FileBrowserViewModel: ObservableObject {
     }
 
     // MARK: - Public Methods
-    func loadFiles() {
+    func loadFiles(notificationService: NotificationService? = nil) {
         isLoading = true
         selectedFiles.removeAll() // Clear selection on reload
         
@@ -87,7 +87,7 @@ class FileBrowserViewModel: ObservableObject {
                 self.filterFiles(with: self.searchQuery, filters: self.activeFilters)
                 
             } catch {
-                // TODO: Show an error to the user
+                notificationService?.show(type: .error, message: "Failed to load files.")
                 print("Error fetching files: \(error)")
                 self.allFiles = []
                 self.allFilesForCurrentFolder = []
@@ -141,7 +141,7 @@ class FileBrowserViewModel: ObservableObject {
         
         do {
             try storage.saveFile(newFolder)
-            loadFiles() // Refresh the view
+            loadFiles(notificationService: notificationService) // Refresh the view
             notificationService.show(type: .success, message: "Folder '\(newFolderName)' created.")
         } catch {
             notificationService.show(type: .error, message: "Failed to create folder.")
@@ -155,7 +155,7 @@ class FileBrowserViewModel: ObservableObject {
     func deleteFiles(withIDs ids: Set<UUID>, notificationService: NotificationService) {
         do {
             try storage.deleteFiles(withIDs: ids)
-            loadFiles() // Refresh the view
+            loadFiles(notificationService: notificationService) // Refresh the view
             notificationService.show(type: .success, message: "Successfully deleted \(ids.count) item(s).")
         } catch {
             notificationService.show(type: .error, message: "Failed to delete items.")
@@ -165,7 +165,7 @@ class FileBrowserViewModel: ObservableObject {
     func duplicateFile(withID id: UUID, notificationService: NotificationService) {
         do {
             try storage.duplicateFile(withID: id)
-            loadFiles()
+            loadFiles(notificationService: notificationService)
             notificationService.show(type: .success, message: "File duplicated successfully.")
         } catch {
             notificationService.show(type: .error, message: "Failed to duplicate file.")
@@ -178,7 +178,7 @@ class FileBrowserViewModel: ObservableObject {
         
         do {
             try storage.saveFile(updatedFile)
-            loadFiles()
+            loadFiles(notificationService: notificationService)
             let message = updatedFile.isFavorite ? "Added to Favorites." : "Removed from Favorites."
             notificationService.show(type: .success, message: message)
         } catch {
@@ -263,7 +263,7 @@ class FileBrowserViewModel: ObservableObject {
         
         do {
             try storage.renameFile(withID: fileToRename.id, newName: newName)
-            loadFiles()
+            loadFiles(notificationService: notificationService)
             notificationService.show(type: .success, message: "Renamed to '\(newName)'.")
         } catch {
             notificationService.show(type: .error, message: "Failed to rename file.")
@@ -283,7 +283,7 @@ class FileBrowserViewModel: ObservableObject {
             
             // Save the file to storage
             try storage.saveFile(file)
-            loadFiles() // Refresh the view
+            loadFiles(notificationService: notificationService) // Refresh the view
             
             notificationService.show(type: .success, message: "Imported '\(file.name)' successfully.")
         } catch {
@@ -320,7 +320,7 @@ class FileBrowserViewModel: ObservableObject {
             
             // Save the updated file
             try storage.saveFile(updatedFile)
-            loadFiles() // Refresh the view
+            loadFiles(notificationService: notificationService) // Refresh the view
             
             notificationService.show(type: .success, message: "Moved '\(fileToMove.name)' to '\(targetFolder.name)'.")
         } catch {
@@ -382,7 +382,7 @@ class FileBrowserViewModel: ObservableObject {
         // Clear selection and reload
         selectedFiles.removeAll()
         isMultiSelectMode = false
-        loadFiles()
+        loadFiles(notificationService: notificationService)
         
         // Show notification
         if failedCount == 0 {
@@ -430,7 +430,7 @@ class FileBrowserViewModel: ObservableObject {
         // Clear selection and reload
         selectedFiles.removeAll()
         isMultiSelectMode = false
-        loadFiles()
+        loadFiles(notificationService: notificationService)
         
         // Show notification
         if failedCount == 0 {
@@ -469,7 +469,7 @@ class FileBrowserViewModel: ObservableObject {
         // Clear selection and reload
         selectedFiles.removeAll()
         isMultiSelectMode = false
-        loadFiles()
+        loadFiles(notificationService: notificationService)
         
         // Show notification
         if failedCount == 0 {

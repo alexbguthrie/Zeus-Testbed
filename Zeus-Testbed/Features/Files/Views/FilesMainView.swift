@@ -57,7 +57,7 @@ struct FilesMainView: View {
             }
             .fileImporter(isPresented: $isImporting, allowedContentTypes: [.content], allowsMultipleSelection: true) { result in
                 storageManager.importFiles(from: result, notificationService: notificationService)
-                browserVM.loadFiles()
+                browserVM.loadFiles(notificationService: notificationService)
             }
             .alert("New Folder", isPresented: $browserVM.isShowingNewFolderAlert) {
                 TextField("Enter folder name", text: $browserVM.newFolderName)
