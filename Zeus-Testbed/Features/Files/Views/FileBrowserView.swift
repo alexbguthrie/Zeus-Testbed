@@ -50,7 +50,7 @@ struct FileBrowserView: View {
         .onTapGesture { isSearchFocused.wrappedValue = false }
         // External drag-and-drop for file import
         .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
-            handleExternalDrop(providers: providers)
+            handleExternalDrop(providers: providers, targetFolder: nil)
         }
         .overlay(
             dropZoneOverlay
@@ -189,7 +189,7 @@ struct FileBrowserView: View {
     
     // MARK: - Drag-and-Drop Handlers
     
-    private func handleExternalDrop(providers: [NSItemProvider]) -> Bool {
+    private func handleExternalDrop(providers: [NSItemProvider], targetFolder: FileItem? = nil) -> Bool {
         var importedCount = 0
         
         for provider in providers {
@@ -198,7 +198,7 @@ struct FileBrowserView: View {
                     if let data = data as? Data,
                        let url = URL(dataRepresentation: data, relativeTo: nil) {
                         DispatchQueue.main.async {
-                            viewModel.importFile(from: url, notificationService: notificationService)
+                            viewModel.importFile(from: url, parentID: targetFolder?.id, notificationService: notificationService)
                             importedCount += 1
                         }
                     }
@@ -249,7 +249,7 @@ private struct FileCardContainerView: View {
             }
         }
         .onTapGesture(count: 1) {
-            viewModel.selectFile(fileID: file.id, isWithCommandKey: NSEvent.modifierFlags.contains(.command))
+            viewModel.selectFile(fileID: file.id, isWithCommandKey: NSEvent.modifierFlags.contains(.command), notificationService: notificationService)
         }
         // Internal drag-and-drop for file movement
         .onDrag {
@@ -277,6 +277,10 @@ private struct FileCardContainerView: View {
             viewModel.draggedFileID = nil
             viewModel.dropTargetFileID = nil
             return true
+        }
+        .onDrop(of: [.fileURL], isTargeted: .constant(false)) { providers in
+            guard file.isFolder else { return false }
+            return handleExternalDrop(providers: providers, targetFolder: file)
         }
         .id(file.id)
     }

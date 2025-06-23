@@ -19,6 +19,10 @@ class FileBrowserViewModel: ObservableObject {
     
     // Advanced Search & Filtering
     @Published var activeFilters = SearchFilters()
+
+    // Sidebar Selection
+    @Published private(set) var activeSmartGroupID: String? = "all"
+    @Published private(set) var activeTagID: UUID? = nil
     
     // Properties for inline renaming
     @Published var fileToRename: FileItem? = nil
@@ -37,13 +41,15 @@ class FileBrowserViewModel: ObservableObject {
     @Published var lastBatchOperation: BatchOperation? = nil
 
     private var storage: FileStorageProvider
+    private let protectionService: FileProtectionService
     var allFiles: [FileItem] = [] // Holds all files from storage
     private var allFilesForCurrentFolder: [FileItem] = []
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initializer
-    init(storage: FileStorageProvider) {
+    init(storage: FileStorageProvider, protectionService: FileProtectionService = FileProtectionService()) {
         self.storage = storage
+        self.protectionService = protectionService
         self.loadFiles()
         
         setupBindings()
@@ -67,6 +73,17 @@ class FileBrowserViewModel: ObservableObject {
                 self?.filterFiles(with: query, filters: filters)
             }
             .store(in: &cancellables)
+    }
+
+    // MARK: - Sidebar Selection Updates
+    func updateSmartGroup(id: String?) {
+        activeSmartGroupID = id ?? "all"
+        filterFiles(with: searchQuery, filters: activeFilters)
+    }
+
+    func updateTag(id: UUID?) {
+        activeTagID = id
+        filterFiles(with: searchQuery, filters: activeFilters)
     }
 
     // MARK: - Public Methods
@@ -98,14 +115,39 @@ class FileBrowserViewModel: ObservableObject {
     }
     
     private func filterFiles(with query: String, filters: SearchFilters) {
-        let sourceFiles = query.isEmpty ? allFilesForCurrentFolder : allFiles
-        
-        if query.isEmpty && !filters.isActive {
+        var sourceFiles: [FileItem]
+        if let group = activeSmartGroupID, group != "all" {
+            sourceFiles = allFiles
+        } else {
+            sourceFiles = query.isEmpty ? allFilesForCurrentFolder : allFiles
+        }
+
+        if query.isEmpty && !filters.isActive && activeSmartGroupID == "all" && activeTagID == nil {
             filteredFiles = allFilesForCurrentFolder
             return
         }
-        
+
         var filtered = sourceFiles
+
+        // --- Apply Smart Group Filter ---
+        if let group = activeSmartGroupID {
+            switch group {
+            case "favorites":
+                filtered = filtered.filter { $0.isFavorite }
+            case "recents":
+                filtered = filtered.sorted { $0.modifiedAt > $1.modifiedAt }
+                filtered = Array(filtered.prefix(20))
+            default:
+                break
+            }
+        }
+
+        // --- Apply Tag Selection ---
+        if let tagID = activeTagID {
+            filtered = filtered.filter { file in
+                file.tags.contains(where: { $0.id == tagID })
+            }
+        }
         
         // --- Apply Text Search Query ---
         if !query.isEmpty {
@@ -185,14 +227,69 @@ class FileBrowserViewModel: ObservableObject {
             notificationService.show(type: .error, message: "Failed to update favorite status.")
         }
     }
+
+    func createNewFile(named name: String, type: FileType, template: String?, notificationService: NotificationService) {
+        let url = storage.filesDirectory.appendingPathComponent(name)
+        let data = (template ?? "").data(using: .utf8) ?? Data()
+
+        do {
+            try data.write(to: url)
+            var newFile = FileItem(name: name, type: type, url: url, size: Int64(data.count), parentID: currentFolderID)
+            try storage.saveFile(newFile)
+            loadFiles(notificationService: notificationService)
+            notificationService.show(type: .success, message: "Created \(name)")
+        } catch {
+            notificationService.show(type: .error, message: "Failed to create file.")
+        }
+    }
+
+    func toggleProtection(for file: FileItem, notificationService: NotificationService) {
+        if file.isProtected {
+            protectionService.authenticate { [weak self] success in
+                guard let self else { return }
+                if success {
+                    self.setProtection(false, for: file, notificationService: notificationService)
+                } else {
+                    notificationService.show(type: .error, message: "Authentication failed.")
+                }
+            }
+        } else {
+            setProtection(true, for: file, notificationService: notificationService)
+        }
+    }
+
+    private func setProtection(_ value: Bool, for file: FileItem, notificationService: NotificationService) {
+        var updated = file
+        updated.isProtected = value
+        do {
+            try storage.saveFile(updated)
+            loadFiles(notificationService: notificationService)
+            let msg = value ? "Protection enabled." : "Protection removed."
+            notificationService.show(type: .success, message: msg)
+        } catch {
+            notificationService.show(type: .error, message: "Failed to update protection.")
+        }
+    }
     
-    func selectFile(fileID: UUID, isWithCommandKey: Bool) {
+    func selectFile(fileID: UUID, isWithCommandKey: Bool, notificationService: NotificationService) {
         if isRenaming {
             // Commit any pending rename if user clicks away
             if let file = fileToRename, file.id != fileID {
                 // ... existing code ...
             }
         } else {
+            if let file = filteredFiles.first(where: { $0.id == fileID }), file.isProtected {
+                protectionService.authenticate { [weak self] success in
+                    guard let self else { return }
+                    if success {
+                        self.performSelection(fileID: fileID, isWithCommandKey: isWithCommandKey)
+                    } else {
+                        notificationService.show(type: .error, message: "Authentication failed.")
+                    }
+                }
+                return
+            }
+
             if isWithCommandKey {
                 if selectedFiles.contains(fileID) {
                     selectedFiles.remove(fileID)
@@ -211,6 +308,27 @@ class FileBrowserViewModel: ObservableObject {
                     selectedFiles = [fileID]
                     isMultiSelectMode = false
                 }
+            }
+        }
+    }
+
+    private func performSelection(fileID: UUID, isWithCommandKey: Bool) {
+        if isWithCommandKey {
+            if selectedFiles.contains(fileID) {
+                selectedFiles.remove(fileID)
+            } else {
+                selectedFiles.insert(fileID)
+            }
+            DispatchQueue.main.async {
+                self.isMultiSelectMode = self.selectedFiles.count > 1
+            }
+        } else {
+            if selectedFiles.contains(fileID) && selectedFiles.count == 1 {
+                selectedFiles.removeAll()
+                isMultiSelectMode = false
+            } else {
+                selectedFiles = [fileID]
+                isMultiSelectMode = false
             }
         }
     }
@@ -276,11 +394,12 @@ class FileBrowserViewModel: ObservableObject {
     
     // MARK: - Drag-and-Drop Operations
     
-    func importFile(from url: URL, notificationService: NotificationService) {
+    func importFile(from url: URL, parentID: UUID? = nil, notificationService: NotificationService) {
         do {
             // Create a FileItem from the URL
-            let file = FileItem(url: url)
-            
+            var file = FileItem(url: url)
+            file.parentID = parentID ?? currentFolderID
+
             // Save the file to storage
             try storage.saveFile(file)
             loadFiles(notificationService: notificationService) // Refresh the view

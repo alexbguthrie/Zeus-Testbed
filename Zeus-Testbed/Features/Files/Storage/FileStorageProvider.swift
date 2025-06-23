@@ -8,6 +8,8 @@
 import Foundation
 
 protocol FileStorageProvider {
+    /// Directory where raw files are stored
+    var filesDirectory: URL { get }
     // MARK: - File Operations
     func fetchFiles() throws -> [FileItem]
     func fetchFile(withID id: UUID) throws -> FileItem?

@@ -38,6 +38,7 @@ struct FilesMainView: View {
                 
                 VStack(spacing: 0) {
                     HeaderView(viewModel: browserVM, layoutMode: $layoutMode, isImporting: $isImporting, isSearchFocused: $isSearchFocused)
+                        .environmentObject(notificationService)
                     FileBrowserView(viewModel: browserVM, layout: $layoutMode, isSearchFocused: $isSearchFocused)
                 }
                 .background(theme.colors.background)
@@ -54,6 +55,12 @@ struct FilesMainView: View {
                 } else {
                     detailsVM.update(with: nil)
                 }
+            }
+            .onReceive(sidebarVM.$selectedSmartGroupID) { id in
+                browserVM.updateSmartGroup(id: id)
+            }
+            .onReceive(sidebarVM.$selectedTagID) { id in
+                browserVM.updateTag(id: id)
             }
             .fileImporter(isPresented: $isImporting, allowedContentTypes: [.content], allowsMultipleSelection: true) { result in
                 storageManager.importFiles(from: result, notificationService: notificationService)
@@ -118,6 +125,7 @@ struct HeaderView: View {
     @Binding var layoutMode: FileLayoutMode
     @Binding var isImporting: Bool
     var isSearchFocused: FocusState<Bool>.Binding
+    @EnvironmentObject var notificationService: NotificationService
     
     @State private var isShowingFilterMenu = false
     
@@ -143,6 +151,11 @@ struct HeaderView: View {
                     
                     Menu {
                         Button("New Folder") { viewModel.isShowingNewFolderAlert = true }
+                        Button("New Empty File") { viewModel.createNewFile(named: "Untitled.txt", type: .text, template: nil, notificationService: notificationService) }
+                        Button("New Swift File") {
+                            let template = "import Foundation\n\n"
+                            viewModel.createNewFile(named: "MyFile.swift", type: .code, template: template, notificationService: notificationService)
+                        }
                         Button("Import Files...") { isImporting = true }
                     } label: {
                         Image(systemName: "plus")
