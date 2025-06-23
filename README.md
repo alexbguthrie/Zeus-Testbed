@@ -20,9 +20,11 @@ The app stores imported files and metadata inside the user's Application Support
 - Search and filtering by type, tags, and date
 - Toast‑style notifications for all file actions
 - Rich file previews for text, images and PDFs
+
 - Smart sidebar groups for Recents and Favorites
 - Optional Face ID/passcode protection on files and folders
 - Quick actions for creating new empty or template-based files
+=======
 
 ## Tests
 The project includes minimal unit and UI test targets. Run them from Xcode with `Cmd+U`.
