@@ -37,5 +37,5 @@ B. Core Components & Functionality
 - Undo/Redo: Only partial undo support for batch operations; a full history stack is not yet implemented.
 - State Persistence: UI state (window size, selections, layout mode) is not saved across launches.
 - Keyboard Shortcuts: Many actions lack dedicated shortcuts for power users.
-- Recents Tracking: The "Recents" smart group is still a placeholder.
+- Recents Tracking: "Recents" smart group now lists the 20 most recently modified files.
 - Editing: Previews are read-only and lack editing or syntax highlighting for code files.

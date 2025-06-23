@@ -19,6 +19,10 @@ class FileBrowserViewModel: ObservableObject {
     
     // Advanced Search & Filtering
     @Published var activeFilters = SearchFilters()
+
+    // Sidebar Selection
+    @Published private(set) var activeSmartGroupID: String? = "all"
+    @Published private(set) var activeTagID: UUID? = nil
     
     // Properties for inline renaming
     @Published var fileToRename: FileItem? = nil
@@ -69,6 +73,17 @@ class FileBrowserViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
+    // MARK: - Sidebar Selection Updates
+    func updateSmartGroup(id: String?) {
+        activeSmartGroupID = id ?? "all"
+        filterFiles(with: searchQuery, filters: activeFilters)
+    }
+
+    func updateTag(id: UUID?) {
+        activeTagID = id
+        filterFiles(with: searchQuery, filters: activeFilters)
+    }
+
     // MARK: - Public Methods
     func loadFiles(notificationService: NotificationService? = nil) {
         isLoading = true
@@ -98,14 +113,39 @@ class FileBrowserViewModel: ObservableObject {
     }
     
     private func filterFiles(with query: String, filters: SearchFilters) {
-        let sourceFiles = query.isEmpty ? allFilesForCurrentFolder : allFiles
-        
-        if query.isEmpty && !filters.isActive {
+        var sourceFiles: [FileItem]
+        if let group = activeSmartGroupID, group != "all" {
+            sourceFiles = allFiles
+        } else {
+            sourceFiles = query.isEmpty ? allFilesForCurrentFolder : allFiles
+        }
+
+        if query.isEmpty && !filters.isActive && activeSmartGroupID == "all" && activeTagID == nil {
             filteredFiles = allFilesForCurrentFolder
             return
         }
-        
+
         var filtered = sourceFiles
+
+        // --- Apply Smart Group Filter ---
+        if let group = activeSmartGroupID {
+            switch group {
+            case "favorites":
+                filtered = filtered.filter { $0.isFavorite }
+            case "recents":
+                filtered = filtered.sorted { $0.modifiedAt > $1.modifiedAt }
+                filtered = Array(filtered.prefix(20))
+            default:
+                break
+            }
+        }
+
+        // --- Apply Tag Selection ---
+        if let tagID = activeTagID {
+            filtered = filtered.filter { file in
+                file.tags.contains(where: { $0.id == tagID })
+            }
+        }
         
         // --- Apply Text Search Query ---
         if !query.isEmpty {

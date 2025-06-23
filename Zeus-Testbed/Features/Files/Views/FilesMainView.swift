@@ -55,6 +55,12 @@ struct FilesMainView: View {
                     detailsVM.update(with: nil)
                 }
             }
+            .onReceive(sidebarVM.$selectedSmartGroupID) { id in
+                browserVM.updateSmartGroup(id: id)
+            }
+            .onReceive(sidebarVM.$selectedTagID) { id in
+                browserVM.updateTag(id: id)
+            }
             .fileImporter(isPresented: $isImporting, allowedContentTypes: [.content], allowsMultipleSelection: true) { result in
                 storageManager.importFiles(from: result, notificationService: notificationService)
                 browserVM.loadFiles(notificationService: notificationService)
